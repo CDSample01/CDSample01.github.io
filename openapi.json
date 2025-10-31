@@ -1,0 +1,372 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Salesforce Dev Agent API",
+    "version": "0.3.0",
+    "description": "API para operações via Salesforce CLI (SOQL, Apex tests, deploy/retrieve MDAPI, Execute Anonymous)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local dev"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "SoqlRequest": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "SoqlResponse": {
+        "type": "object",
+        "properties": {
+          "totalSize": {
+            "type": "integer"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "TestsRequest": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "testLevel": {
+            "type": "string",
+            "enum": [
+              "RunLocalTests",
+              "RunSpecifiedTests"
+            ]
+          },
+          "calculateCoverage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TestsResponse": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "className": {
+                  "type": "string"
+                },
+                "methodName": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "stackTrace": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "DeployRequest": {
+        "type": "object",
+        "required": [
+          "zipBase64"
+        ],
+        "properties": {
+          "zipBase64": {
+            "type": "string"
+          }
+        }
+      },
+      "DeployResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      },
+      "RetrieveRequest": {
+        "type": "object",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "members"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "members": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RetrieveResponse": {
+        "type": "object",
+        "properties": {
+          "zipBase64": {
+            "type": "string"
+          }
+        }
+      },
+      "AnonRequest": {
+        "type": "object",
+        "required": [
+          "apex"
+        ],
+        "properties": {
+          "apex": {
+            "type": "string"
+          }
+        }
+      },
+      "AnonResponse": {
+        "type": "object",
+        "properties": {
+          "compiled": {
+            "type": "boolean"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "logs": {
+            "type": "string"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "tags": [
+          "health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/soql": {
+      "post": {
+        "summary": "Executa SOQL",
+        "tags": [
+          "soql"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SoqlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado SOQL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoqlResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tests": {
+      "post": {
+        "summary": "Executa testes Apex",
+        "tags": [
+          "tests"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resumo e resultados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deploy": {
+      "post": {
+        "summary": "Faz deploy MDAPI (zip base64)",
+        "tags": [
+          "deploy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeployRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status do deploy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeployResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/retrieve": {
+      "post": {
+        "summary": "Faz retrieve MDAPI e retorna zip base64",
+        "tags": [
+          "retrieve"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrieveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Zip base64",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrieveResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anon": {
+      "post": {
+        "summary": "Executa Anonymous Apex",
+        "tags": [
+          "anon"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado da execução",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
